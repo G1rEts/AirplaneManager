@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using AirplaneManager.Managers;
@@ -26,8 +26,12 @@ namespace AirplaneManager
         private Label lblLoadingDots = null!;
         private Button btnBackHeader = null!;
 
-        // Реактив поиск
+        // Реактивный поиск
         private TextBox txtSearch = null!;
+
+        // Кнопки работы с XML (располагаются на центральном экране выбора рейса)
+        private Button btnExportXml = null!;
+        private Button btnImportXml = null!;
 
         // Боковые кнопки
         private Button btnRoutes = null!;
@@ -122,71 +126,58 @@ namespace AirplaneManager
             // 2. ЭКРАН ОШИБКИ БАЗЫ ДАННЫХ
             pnlDbError = new BufferedPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Visible = false };
 
-            var pnlErrorTop = new BufferedPanel { Dock = DockStyle.Top, Height = 120, BackColor = Color.Transparent };
-            var picErrorLogo = new PictureBox
-            {
-                Size = new Size(90, 90),
-                SizeMode = PictureBoxSizeMode.Zoom,
-                Location = new Point(25, 20),
-                BackColor = Color.Transparent,
-                Image = iconImage
-            };
-
-            var lblError = new Label
-            {
-                Text = "Ошибка загрузки базы данных",
-                Font = new Font("Arial", 28, FontStyle.Bold),
-                ForeColor = Color.Red,
-                AutoSize = true,
-                Location = new Point(135, 40),
-                BackColor = Color.Transparent
-            };
-            pnlErrorTop.Controls.AddRange(new Control[] { picErrorLogo, lblError });
-
-            var errorCenterGrid = new BufferedTableLayoutPanel
+            var errorCenterLayout = new BufferedTableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.Transparent,
                 ColumnCount = 3,
                 RowCount = 3
             };
-            errorCenterGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            errorCenterGrid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            errorCenterGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-            errorCenterGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
-            errorCenterGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            errorCenterGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 60F));
+            errorCenterLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            errorCenterLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            errorCenterLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            errorCenterLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            errorCenterLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            errorCenterLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
 
-            var errorButtonsFlow = new FlowLayoutPanel
+            var errorCard = new BufferedPanel
             {
-                FlowDirection = FlowDirection.TopDown,
-                AutoSize = true,
-                BackColor = Color.Transparent
+                Size = new Size(540, 240),
+                BackColor = Color.FromArgb(235, 255, 255, 255)
             };
 
-            var btnRetryDb = UiStyleHelper.CreateStyledButton("Попробовать снова", new Size(340, 65));
-            btnRetryDb.Margin = new Padding(0, 0, 0, 20);
-            btnRetryDb.Click += async (s, e) => await RunStartupSequence();
+            var lblErrorMsg = new Label
+            {
+                Text = "Ошибка подключения к базе данных!\nУбедитесь, что служба MySQL запущена.",
+                Font = new Font("Arial", 14, FontStyle.Bold),
+                ForeColor = Color.DarkRed,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Dock = DockStyle.Top,
+                Height = 110
+            };
 
-            var btnNewDb = UiStyleHelper.CreateStyledButton("Начать с новой базы данных", new Size(340, 65));
-            btnNewDb.Margin = new Padding(0, 0, 0, 20);
-            btnNewDb.Click += (s, e) => MessageBox.Show("Не.");
+            var btnRetry = new Button
+            {
+                Text = "Повторить подключение",
+                Font = new Font("Arial", 12, FontStyle.Bold),
+                Size = new Size(260, 48),
+                BackColor = Color.FromArgb(220, 220, 220),
+                FlatStyle = FlatStyle.Flat
+            };
+            btnRetry.Location = new Point((errorCard.Width - btnRetry.Width) / 2, 130);
+            btnRetry.Click += async (s, e) => await RunStartupSequence();
 
-            var btnCustomDb = UiStyleHelper.CreateStyledButton("Ввести другую базу данных", new Size(340, 65));
-            btnCustomDb.Click += (s, e) => MessageBox.Show("Не.");
-
-            errorButtonsFlow.Controls.AddRange(new Control[] { btnRetryDb, btnNewDb, btnCustomDb });
-            errorCenterGrid.Controls.Add(errorButtonsFlow, 1, 1);
-
-            pnlDbError.Controls.Add(errorCenterGrid);
-            pnlDbError.Controls.Add(pnlErrorTop);
+            errorCard.Controls.Add(lblErrorMsg);
+            errorCard.Controls.Add(btnRetry);
+            errorCenterLayout.Controls.Add(errorCard, 1, 1);
+            pnlDbError.Controls.Add(errorCenterLayout);
 
             // 3. ЭКРАН УСПЕШНОГО ПОДКЛЮЧЕНИЯ
             pnlSuccess = new BufferedPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Visible = false };
 
             var picSuccessLogo = new PictureBox
             {
-                Size = new Size(90, 90),
+                Size = new Size(80, 80),
                 SizeMode = PictureBoxSizeMode.Zoom,
                 Location = new Point(25, 20),
                 BackColor = Color.Transparent,
@@ -247,6 +238,15 @@ namespace AirplaneManager
                 BackColor = UiStyleHelper.HeaderBgColor
             };
 
+            lblDashTitle = new Label
+            {
+                Text = "Панель управления",
+                Font = new Font("Arial", 22, FontStyle.Bold),
+                Location = new Point(25, 22),
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
             txtSearch = new TextBox
             {
                 PlaceholderText = "Быстрый поиск по таблице...",
@@ -258,21 +258,12 @@ namespace AirplaneManager
             };
             txtSearch.TextChanged += (s, e) => ApplyColumnSorting();
 
-            lblDashTitle = new Label
-            {
-                Text = "Панель управления",
-                Font = new Font("Arial", 22, FontStyle.Bold),
-                Location = new Point(25, 22),
-                AutoSize = true,
-                BackColor = Color.Transparent
-            };
-
             btnBackHeader = new Button
             {
-                Text = "⬅ Назад",
+                Text = "Назад",
                 Font = new Font("Arial", 11, FontStyle.Bold),
-                Size = new Size(140, 40),
-                Location = new Point(pnlHeader.Width - 165, 22),
+                Size = new Size(130, 36),
+                Location = new Point(pnlHeader.Width - 155, 24),
                 Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 BackColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -320,14 +311,25 @@ namespace AirplaneManager
                 BackColor = Color.Transparent
             };
 
-            var btnChoiceAdd = UiStyleHelper.CreateStyledButton("Добавить новую запись", new Size(360, 70));
-            btnChoiceAdd.Margin = new Padding(0, 0, 0, 25);
+            var btnChoiceAdd = UiStyleHelper.CreateStyledButton("Добавить новую запись", new Size(360, 65));
+            btnChoiceAdd.Margin = new Padding(0, 0, 0, 16);
             btnChoiceAdd.Click += btnAdd_Click;
 
-            var btnChoiceView = UiStyleHelper.CreateStyledButton("Просмотреть таблицу", new Size(360, 70));
-            btnChoiceView.Click += (s, e) => OpenTableView();
+            var btnChoiceView = UiStyleHelper.CreateStyledButton("Просмотреть таблицу", new Size(360, 65));
+            btnChoiceView.Margin = new Padding(0, 0, 0, 16);
+            btnChoiceView.Click += (s, e) => OpenTableView(true);
 
-            choiceButtonsFlow.Controls.AddRange(new Control[] { btnChoiceAdd, btnChoiceView });
+            btnExportXml = UiStyleHelper.CreateStyledButton("Экспорт рейсов в XML", new Size(360, 55));
+            btnExportXml.Margin = new Padding(0, 0, 0, 16);
+            btnExportXml.Click += btnExportXml_Click;
+            btnExportXml.Visible = false;
+
+            btnImportXml = UiStyleHelper.CreateStyledButton("Импорт рейсов из XML", new Size(360, 55));
+            btnImportXml.Margin = new Padding(0, 0, 0, 16);
+            btnImportXml.Click += btnImportXml_Click;
+            btnImportXml.Visible = false;
+
+            choiceButtonsFlow.Controls.AddRange(new Control[] { btnChoiceAdd, btnChoiceView, btnExportXml, btnImportXml });
             choiceCenterGrid.Controls.Add(choiceButtonsFlow, 1, 1);
             pnlEntityChoice.Controls.Add(choiceCenterGrid);
 
@@ -384,13 +386,17 @@ namespace AirplaneManager
                 AllowUserToAddRows = false,
                 ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize
             };
-            UiStyleHelper.EnableDoubleBuffering(gridMain); // Убираем мерцание самой таблицы
+            UiStyleHelper.EnableDoubleBuffering(gridMain);
 
             gridMain.CellClick += (s, e) =>
             {
                 if (e.RowIndex >= 0)
                 {
                     pnlBottomActions.Visible = true;
+                    if (e.ColumnIndex >= 0)
+                    {
+                        OnCellClickedColumn(e.ColumnIndex);
+                    }
                 }
             };
 

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using AirplaneManager.Exceptions;
 using AirplaneManager.Managers;
 using AirplaneManager.Managers.Crud;
 using AirplaneManager.Models;
@@ -34,9 +35,15 @@ namespace AirplaneManager.UI
         private CheckBox _chkAssignPlane = new CheckBox { Text = "Назначить самолет на рейс", AutoSize = true, Font = new Font("Arial", 10, FontStyle.Bold), Checked = true };
         private DateTimePicker _dtpFlight = new DateTimePicker { Width = 250, Font = new Font("Arial", 11), Format = DateTimePickerFormat.Custom, CustomFormat = "yyyy-MM-dd HH:mm" };
 
-        private CheckedListBox _clbPilots = new CheckedListBox { Width = 250, Height = 80, CheckOnClick = true };
-        private CheckedListBox _clbAttendants = new CheckedListBox { Width = 250, Height = 80, CheckOnClick = true };
-        private CheckedListBox _clbPassengers = new CheckedListBox { Width = 250, Height = 80, CheckOnClick = true };
+        // Идентификаторы выбранного персонала и пассажиров для рейса
+        private List<int> _selectedPilotIds = new List<int>();
+        private List<int> _selectedAttendantIds = new List<int>();
+        private List<int> _selectedPassengerIds = new List<int>();
+
+        // Кнопки открытия модальных окон выбора
+        private Button _btnSelectPilots = null!;
+        private Button _btnSelectAttendants = null!;
+        private Button _btnSelectPassengers = null!;
 
         public EntityEditForm(EntityType entityType, int? editId = null)
         {
@@ -46,6 +53,8 @@ namespace AirplaneManager.UI
             BuildFormUi();
             SetupReactiveEvents();
             if (_editId.HasValue) LoadExistingData(_editId.Value);
+
+            this.Shown += (s, e) => ValidateFormInputs();
             ValidateFormInputs();
         }
 
@@ -53,7 +62,7 @@ namespace AirplaneManager.UI
         {
             string mode = _editId.HasValue ? $"Редактирование (ID: {_editId})" : "Добавление новой записи";
             this.Text = $"{mode} — {_entityType}";
-            this.Size = new Size(520, _entityType == EntityType.Flight ? 640 : 450);
+            this.Size = new Size(540, _entityType == EntityType.Flight ? 520 : 450);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -100,23 +109,26 @@ namespace AirplaneManager.UI
                     _num1.Minimum = 18; _num1.Maximum = 90; _num1.Value = 30;
                     AddRow("Возраст:", _num1);
                     AddRow("Паспорт:", _txt3);
+                    _num2.Minimum = 0; _num2.Value = 500;
                     AddRow("Налет часов:", _num2);
-                    AddRow("Номер лицензии:", _txt4);
-                    AddRow("Ранг (1 или 2):", _num3);
+                    AddRow("Лицензия (6 цифр):", _txt4);
+                    _num3.Minimum = 1; _num3.Maximum = 2; _num3.Value = 1;
+                    AddRow("Класс/Ранг пилота:", _num3);
                     break;
 
                 case EntityType.FlightAttendant:
                     AddRow("Имя:", _txt1);
                     AddRow("Фамилия:", _txt2);
-                    _num1.Minimum = 18; _num1.Maximum = 90; _num1.Value = 25;
+                    _num1.Minimum = 18; _num1.Maximum = 70; _num1.Value = 23;
                     AddRow("Возраст:", _num1);
                     AddRow("Паспорт:", _txt3);
+                    _num2.Minimum = 0; _num2.Value = 2;
                     AddRow("Стаж работы (лет):", _num2);
                     AddRow("Языки (через запятую):", _txt4);
                     break;
 
                 case EntityType.Route:
-                    AddRow("Номер маршрута:", _txt1);
+                    AddRow("Номер маршрута (напр. SU-101):", _txt1);
                     AddRow("Длительность (часов):", _txt2);
                     var airports1 = AirportCrudManager.GetAll();
                     var airports2 = AirportCrudManager.GetAll();
@@ -134,16 +146,13 @@ namespace AirplaneManager.UI
                     _cmb2.DataSource = AirplaneCrudManager.GetAll();
                     AddRow("Самолет:", _cmb2);
 
-                    foreach (var p in PilotCrudManager.GetAll())
-                        _clbPilots.Items.Add(new ListItem(p.Id, $"{p.FirstName} {p.LastName} (Ранг {p.Rang})"));
-                    foreach (var a in FlightAttendantCrudManager.GetAll())
-                        _clbAttendants.Items.Add(new ListItem(a.Id, $"{a.FirstName} {a.LastName}"));
-                    foreach (var pass in PassengerCrudManager.GetAll())
-                        _clbPassengers.Items.Add(new ListItem(pass.Id, $"{pass.FirstName} {pass.LastName}"));
+                    _btnSelectPilots = CreatePersonnelButton("Пилоты (выбрано: 0)", OnSelectPilotsClick);
+                    _btnSelectAttendants = CreatePersonnelButton("Бортпроводники (выбрано: 0)", OnSelectAttendantsClick);
+                    _btnSelectPassengers = CreatePersonnelButton("Пассажиры (выбрано: 0)", OnSelectPassengersClick);
 
-                    AddRow("Пилоты:", _clbPilots);
-                    AddRow("Бортпроводники:", _clbAttendants);
-                    AddRow("Пассажиры:", _clbPassengers);
+                    AddRow("Пилоты:", _btnSelectPilots);
+                    AddRow("Бортпроводники:", _btnSelectAttendants);
+                    AddRow("Пассажиры:", _btnSelectPassengers);
                     break;
             }
 
@@ -194,6 +203,94 @@ namespace AirplaneManager.UI
             this.Controls.Add(pnlButtons);
         }
 
+        private Button CreatePersonnelButton(string text, EventHandler onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Width = 250,
+                Height = 36,
+                Font = new Font("Arial", 10, FontStyle.Bold),
+                BackColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderColor = Color.FromArgb(180, 180, 180);
+            btn.Click += onClick;
+            return btn;
+        }
+
+        private void OnSelectPilotsClick(object? sender, EventArgs e)
+        {
+            var items = PilotCrudManager.GetAll().OrderBy(p => p.Rang).ThenBy(p => p.LastName).Select(p => new SelectableItem
+            {
+                Id = p.Id,
+                Title = $"{p.FirstName} {p.LastName}",
+                Details = $"Ранг: {p.Rang} | Налет: {p.FlightHours} ч | Лицензия: {p.LicenseNumber}"
+            }).ToList();
+
+            using (var dlg = new MultiSelectDialog("Выбор пилотов на рейс", items, _selectedPilotIds))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _selectedPilotIds = dlg.SelectedIds.ToList();
+                    UpdatePersonnelButtons();
+                    ValidateFormInputs();
+                }
+            }
+        }
+
+        private void OnSelectAttendantsClick(object? sender, EventArgs e)
+        {
+            var items = FlightAttendantCrudManager.GetAll().OrderBy(a => a.Service).ThenBy(a => a.LastName).Select(a => new SelectableItem
+            {
+                Id = a.Id,
+                Title = $"{a.FirstName} {a.LastName}",
+                Details = $"Стаж: {a.Service} лет | Паспорт: {a.Passport} | Языки: {string.Join(", ", a.Languages)}"
+            }).ToList();
+
+            using (var dlg = new MultiSelectDialog("Выбор бортпроводников на рейс", items, _selectedAttendantIds))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _selectedAttendantIds = dlg.SelectedIds.ToList();
+                    UpdatePersonnelButtons();
+                    ValidateFormInputs();
+                }
+            }
+        }
+
+        private void OnSelectPassengersClick(object? sender, EventArgs e)
+        {
+            var items = PassengerCrudManager.GetAll().OrderBy(p => p.LastName).ThenBy(p => p.FirstName).Select(pass => new SelectableItem
+            {
+                Id = pass.Id,
+                Title = $"{pass.FirstName} {pass.LastName}",
+                Details = $"Возраст: {pass.Age} | Паспорт: {pass.Passport} | Бонусы: {pass.Bonus} миль"
+            }).ToList();
+
+            using (var dlg = new MultiSelectDialog("Выбор пассажиров на рейс", items, _selectedPassengerIds))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _selectedPassengerIds = dlg.SelectedIds.ToList();
+                    UpdatePersonnelButtons();
+                    ValidateFormInputs();
+                }
+            }
+        }
+
+        private void UpdatePersonnelButtons()
+        {
+            if (_btnSelectPilots != null)
+                _btnSelectPilots.Text = $"Пилоты (выбрано: {_selectedPilotIds.Count})";
+            if (_btnSelectAttendants != null)
+                _btnSelectAttendants.Text = $"Бортпроводники (выбрано: {_selectedAttendantIds.Count})";
+            if (_btnSelectPassengers != null)
+                _btnSelectPassengers.Text = $"Пассажиры (выбрано: {_selectedPassengerIds.Count})";
+        }
+
         private void AddRow(string labelText, Control control)
         {
             int row = _fieldsGrid.RowCount++;
@@ -211,9 +308,7 @@ namespace AirplaneManager.UI
             _fieldsGrid.Controls.Add(control, 1, row);
         }
 
-        // =========================================================================
-        // РЕАКТИВНОСТЬ ИНТЕРФЕЙСА (СОБЫТИЯ TextChanged, SelectedIndexChanged, CheckedChanged)
-        // =========================================================================
+        // РЕАКТИВНОСТЬ ИНТЕРФЕЙСА (TextChanged, SelectedIndexChanged, CheckedChanged)
         private void SetupReactiveEvents()
         {
             // Реактивная валидация при вводе любого текста
@@ -300,27 +395,28 @@ namespace AirplaneManager.UI
                         error = "Введите номер маршрута";
                     else if (!double.TryParse(_txt2.Text.Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out double d) || d <= 0)
                         error = "Введите корректную длительность полета (> 0)";
-                    else if (_cmb1.SelectedItem == null || _cmb2.SelectedItem == null)
-                        error = "Выберите аэропорт вылета и прилета!";
-                    else if (_cmb1.SelectedItem is Airport a1 && _cmb2.SelectedItem is Airport a2 && a1.Id == a2.Id)
-                        error = "Аэропорт вылета и прилета не могут совпадать!";
+                    else if (_cmb1.SelectedIndex < 0 && _cmb1.SelectedItem == null)
+                        error = "Выберите аэропорт вылета!";
+                    else if (_cmb2.SelectedIndex < 0 && _cmb2.SelectedItem == null)
+                        error = "Выберите аэропорт прилета!";
                     break;
 
                 case EntityType.Flight:
-                    if (_cmb1.SelectedItem == null) error = "Выберите маршрут";
+                    if (_cmb1.SelectedIndex < 0 && _cmb1.SelectedItem == null)
+                        error = "Выберите маршрут";
                     break;
             }
 
             if (string.IsNullOrEmpty(error))
             {
-                _lblValidationStatus.Text = "✓ Все поля заполнены корректно";
+                _lblValidationStatus.Text = "Все поля заполнены корректно";
                 _lblValidationStatus.ForeColor = Color.FromArgb(40, 140, 60);
                 _btnSave.Enabled = true;
                 _btnSave.BackColor = Color.FromArgb(60, 150, 80);
             }
             else
             {
-                _lblValidationStatus.Text = "⚠ " + error;
+                _lblValidationStatus.Text = error;
                 _lblValidationStatus.ForeColor = Color.Crimson;
                 _btnSave.Enabled = false;
                 _btnSave.BackColor = Color.Gray;
@@ -369,9 +465,10 @@ namespace AirplaneManager.UI
                         SelectComboById(_cmb1, fl.Route.Id);
                         _chkAssignPlane.Checked = fl.Airplane != null;
                         if (fl.Airplane != null) SelectComboById(_cmb2, fl.Airplane.Id);
-                        CheckListItems(_clbPilots, fl.Pilots.Select(x => x.Id).ToList());
-                        CheckListItems(_clbAttendants, fl.FlightAttendants.Select(x => x.Id).ToList());
-                        CheckListItems(_clbPassengers, fl.Passengers.Select(x => x.Id).ToList());
+                        _selectedPilotIds = fl.Pilots.Select(x => x.Id).ToList();
+                        _selectedAttendantIds = fl.FlightAttendants.Select(x => x.Id).ToList();
+                        _selectedPassengerIds = fl.Passengers.Select(x => x.Id).ToList();
+                        UpdatePersonnelButtons();
                     }
                     break;
             }
@@ -387,15 +484,6 @@ namespace AirplaneManager.UI
                     cmb.SelectedIndex = i;
                     break;
                 }
-            }
-        }
-
-        private void CheckListItems(CheckedListBox clb, List<int> ids)
-        {
-            for (int i = 0; i < clb.Items.Count; i++)
-            {
-                if (clb.Items[i] is ListItem item && ids.Contains(item.Id))
-                    clb.SetItemChecked(i, true);
             }
         }
 
@@ -447,6 +535,12 @@ namespace AirplaneManager.UI
                         double dur = double.Parse(_txt2.Text.Replace(',', '.'), CultureInfo.InvariantCulture);
                         var dep = (Airport)_cmb1.SelectedItem!;
                         var arr = (Airport)_cmb2.SelectedItem!;
+
+                        if (dep.Id == arr.Id)
+                        {
+                            throw new InvalidRouteException(dep.Name, arr.Name);
+                        }
+
                         var route = _editId.HasValue
                             ? new Route(id, _txt1.Text.Trim(), dur, dep, arr)
                             : new Route(_txt1.Text.Trim(), dur, dep, arr);
@@ -456,34 +550,44 @@ namespace AirplaneManager.UI
                     case EntityType.Flight:
                         var rt = (Route)_cmb1.SelectedItem!;
                         var pln = _chkAssignPlane.Checked ? (Airplane?)_cmb2.SelectedItem : null;
-                        var pilotIds = _clbPilots.CheckedItems.Cast<ListItem>().Select(x => x.Id).ToList();
-                        var attIds = _clbAttendants.CheckedItems.Cast<ListItem>().Select(x => x.Id).ToList();
-                        var passList = _clbPassengers.CheckedItems.Cast<ListItem>()
-                            .Select(x => PassengerCrudManager.GetById(x.Id)).Where(x => x != null).Cast<Passenger>().ToList();
+                        var passList = _selectedPassengerIds
+                            .Select(x => PassengerCrudManager.GetById(x))
+                            .Where(x => x != null)
+                            .Cast<Passenger>()
+                            .ToList();
+
+                        if (pln != null && passList.Count > pln.Capacity)
+                        {
+                            throw new FlightCapacityExceededException(pln.Capacity, passList.Count);
+                        }
 
                         var flight = _editId.HasValue
                             ? new Flight(id, _dtpFlight.Value, rt, pln, passList)
                             : new Flight(_dtpFlight.Value, rt, pln, passList);
 
-                        if (_editId.HasValue) FlightCrudManager.Update(flight, pilotIds, attIds);
-                        else FlightCrudManager.Add(flight, pilotIds, attIds);
+                        if (_editId.HasValue) FlightCrudManager.Update(flight, _selectedPilotIds, _selectedAttendantIds);
+                        else FlightCrudManager.Add(flight, _selectedPilotIds, _selectedAttendantIds);
                         break;
                 }
 
                 this.DialogResult = DialogResult.OK;
             }
+            catch (FlightCapacityExceededException ex)
+            {
+                MessageBox.Show(ex.Message, "Превышение вместимости", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (InvalidRouteException ex)
+            {
+                MessageBox.Show(ex.Message, "Некорректный маршрут", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex)
+            {
+                MessageBox.Show($"Ошибка базы данных ({ex.Number}): {ex.Message}", "Ошибка СУБД", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка сохранения: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Непредвиденная ошибка: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private class ListItem
-        {
-            public int Id { get; }
-            public string Text { get; }
-            public ListItem(int id, string text) { Id = id; Text = text; }
-            public override string ToString() => Text;
         }
     }
 }

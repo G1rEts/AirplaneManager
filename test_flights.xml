@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<flights>
+  <flight id="101" date="2026-11-15 10:30">
+    <route id="1" number="SU-101" duration="1.5">
+      <departure id="1" code="SVO" name="Sheremetyevo International Airport" city="Moscow" country="Russia" />
+      <arrival id="2" code="LED" name="Pulkovo Airport" city="Saint Petersburg" country="Russia" />
+    </route>
+    <airplane id="1" model="Boeing 737-800" capacity="189" />
+    <pilots>
+      <pilot id="1" firstName="Александр" lastName="Карелин" age="42" passport="4701 111111" flightHours="3200" license="100001" rang="2" />
+      <pilot id="2" firstName="Валерий" lastName="Чкалов" age="38" passport="4702 222222" flightHours="2100" license="100002" rang="1" />
+    </pilots>
+    <flightAttendants>
+      <attendant id="1" firstName="Валерия" lastName="Голубева" age="24" passport="4703 333333" service="3" languages="English, Russian" />
+      <attendant id="2" firstName="Марина" lastName="Виноградова" age="26" passport="4704 444444" service="5" languages="English, German" />
+    </flightAttendants>
+    <passengers>
+      <passenger id="1" firstName="Руслан" lastName="Гусев" age="29" passport="4705 555555" bonus="1500" />
+      <passenger id="2" firstName="Маргарита" lastName="Титова" age="23" passport="4706 666666" bonus="450" />
+      <passenger id="3" firstName="Егор" lastName="Власов" age="34" passport="4707 777777" bonus="0" />
+    </passengers>
+  </flight>
+  <flight id="102" date="2026-11-16 14:00">
+    <route id="3" number="S7-203" duration="2.3">
+      <departure id="1" code="SVO" name="Sheremetyevo International Airport" city="Moscow" country="Russia" />
+      <arrival id="4" code="SVX" name="Koltsovo Airport" city="Yekaterinburg" country="Russia" />
+    </route>
+    <airplane id="2" model="Airbus A320" capacity="180" />
+    <pilots>
+      <pilot id="3" firstName="Борис" lastName="Вдовин" age="45" passport="4708 888888" flightHours="4500" license="100003" rang="1" />
+    </pilots>
+    <flightAttendants>
+      <attendant id="3" firstName="Злата" lastName="Богданова" age="23" passport="4709 999999" service="2" languages="Russian, French" />
+    </flightAttendants>
+    <passengers>
+      <passenger id="4" firstName="Алексей" lastName="Смирнов" age="40" passport="4710 101010" bonus="3200" />
+      <passenger id="5" firstName="Дарья" lastName="Иванова" age="27" passport="4711 121212" bonus="800" />
+    </passengers>
+  </flight>
+  <flight id="103" date="2026-11-18 19:45">
+    <route id="7" number="FV-411" duration="4.2">
+      <departure id="2" code="LED" name="Pulkovo Airport" city="Saint Petersburg" country="Russia" />
+      <arrival id="6" code="AER" name="Sochi International Airport" city="Sochi" country="Russia" />
+    </route>
+    <airplane id="4" model="Superjet 100" capacity="103" />
+    <pilots>
+      <pilot id="4" firstName="Олег" lastName="Васильев" age="36" passport="4712 131313" flightHours="1800" license="100004" rang="2" />
+    </pilots>
+    <flightAttendants>
+      <attendant id="4" firstName="Диана" lastName="Воробьева" age="25" passport="4713 141414" service="4" languages="Russian, English, Spanish" />
+    </flightAttendants>
+    <passengers>
+      <passenger id="6" firstName="Константин" lastName="Новиков" age="31" passport="4714 151515" bonus="2100" />
+    </passengers>
+  </flight>
+</flights>

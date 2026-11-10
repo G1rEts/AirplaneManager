@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using AirplaneManager.Managers;
 using AirplaneManager.Managers.Crud;
 using AirplaneManager.UI;
+using AirplaneManager.XmlManager;
 using MySql.Data.MySqlClient;
 
 namespace AirplaneManager
@@ -93,12 +94,17 @@ namespace AirplaneManager
             btnBackHeader.Visible = false;
             pnlEntityChoice.Visible = true;
 
+            // Кнопки XML видны только на экране выбора для сущности "Рейсы"
+            bool isFlight = (entity == EntityType.Flight);
+            btnExportXml.Visible = isFlight;
+            btnImportXml.Visible = isFlight;
+
             this.ResumeLayout();
 
             txtSearch.Visible = false;
         }
 
-        private void OpenTableView()
+        private void OpenTableView(bool reloadFromDb = true)
         {
             this.SuspendLayout();
 
@@ -110,13 +116,19 @@ namespace AirplaneManager
             _currentSortColumn = "Id";
             _isSortAscending = true;
 
-            LoadEntityData(_currentEntity);
+            if (reloadFromDb)
+            {
+                LoadEntityData(_currentEntity);
+            }
+
             ApplyColumnSorting();
+            UpdateSearchPlaceholder();
             gridMain.ClearSelection();
 
             this.ResumeLayout();
 
-            txtSearch.Text = ""; txtSearch.Visible = true;
+            txtSearch.Text = "";
+            txtSearch.Visible = true;
         }
 
         private void LoadEntityData(EntityType entity)
@@ -143,19 +155,57 @@ namespace AirplaneManager
 
         private void GridMain_ColumnHeaderMouseClick(object? sender, DataGridViewCellMouseEventArgs e)
         {
+            if (e.ColumnIndex < 0 || e.ColumnIndex >= gridMain.Columns.Count) return;
+
             string clickedProp = gridMain.Columns[e.ColumnIndex].DataPropertyName;
             if (string.IsNullOrEmpty(clickedProp))
                 clickedProp = gridMain.Columns[e.ColumnIndex].Name;
 
             if (_currentSortColumn == clickedProp)
+            {
                 _isSortAscending = !_isSortAscending;
+            }
             else
             {
                 _currentSortColumn = clickedProp;
                 _isSortAscending = true;
             }
 
+            UpdateSearchPlaceholder();
             ApplyColumnSorting();
+        }
+
+        public void OnCellClickedColumn(int columnIndex)
+        {
+            if (columnIndex < 0 || columnIndex >= gridMain.Columns.Count) return;
+
+            string propName = gridMain.Columns[columnIndex].DataPropertyName;
+            if (string.IsNullOrEmpty(propName))
+                propName = gridMain.Columns[columnIndex].Name;
+
+            if (_currentSortColumn != propName)
+            {
+                _currentSortColumn = propName;
+                UpdateSearchPlaceholder();
+                if (!string.IsNullOrWhiteSpace(txtSearch.Text))
+                {
+                    ApplyColumnSorting();
+                }
+            }
+        }
+
+        private void UpdateSearchPlaceholder()
+        {
+            if (txtSearch == null) return;
+
+            string headerText = _currentSortColumn;
+            if (gridMain.Columns.Contains(_currentSortColumn))
+            {
+                var col = gridMain.Columns[_currentSortColumn];
+                if (col != null) headerText = col.HeaderText;
+            }
+
+            txtSearch.PlaceholderText = $"Поиск по столбцу «{headerText}»...";
         }
 
         private void ApplyColumnSorting()
@@ -173,9 +223,23 @@ namespace AirplaneManager
             if (txtSearch != null && !string.IsNullOrWhiteSpace(txtSearch.Text))
             {
                 string q = txtSearch.Text.Trim().ToLowerInvariant();
-                filtered = _currentDataList.Where(item =>
-                    item.GetType().GetProperties().Any(p =>
-                        (p.GetValue(item)?.ToString() ?? "").ToLowerInvariant().Contains(q)));
+
+                // Фильтрация строго по выбранному столбцу
+                if (prop != null)
+                {
+                    filtered = _currentDataList.Where(item =>
+                    {
+                        var val = prop.GetValue(item);
+                        return val != null && val.ToString()!.ToLowerInvariant().Contains(q);
+                    });
+                }
+                else
+                {
+                    // Резервный поиск по всем свойствам объекта
+                    filtered = _currentDataList.Where(item =>
+                        item.GetType().GetProperties().Any(p =>
+                            (p.GetValue(item)?.ToString() ?? "").ToLowerInvariant().Contains(q)));
+                }
             }
 
             IEnumerable<object> sorted = filtered;
@@ -276,6 +340,78 @@ namespace AirplaneManager
                 catch (Exception ex)
                 {
                     MessageBox.Show($"Ошибка при удалении: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void btnExportXml_Click(object? sender, EventArgs e)
+        {
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Title = "Экспорт рейсов в XML";
+                sfd.Filter = "XML-файлы (*.xml)|*.xml";
+                sfd.FileName = "flights_export.xml";
+
+                if (sfd.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        var flights = FlightCrudManager.GetAll();
+                        FlightXmlManager.ExportFlights(sfd.FileName, flights);
+
+                        MessageBox.Show(
+                            $"Успешно экспортировано {flights.Count} рейсов в XML-файл!",
+                            "Экспорт завершен",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при экспорте в XML: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void btnImportXml_Click(object? sender, EventArgs e)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "Импорт рейсов из XML";
+                ofd.Filter = "XML-файлы (*.xml)|*.xml";
+
+                if (ofd.ShowDialog(this) == DialogResult.OK)
+                {
+                    try
+                    {
+                        var answer = MessageBox.Show(
+                            "Загрузить рейсы из XML напрямую в базу данных MySQL?\n\n" +
+                            "• «Да» — заменить существующие рейсы новыми из файла\n" +
+                            "• «Нет» — добавить рейсы из файла к существующим\n" +
+                            "• «Отмена» — отменить операцию",
+                            "Импорт рейсов в БД",
+                            MessageBoxButtons.YesNoCancel,
+                            MessageBoxIcon.Question);
+
+                        if (answer == DialogResult.Cancel) return;
+
+                        bool clearExisting = (answer == DialogResult.Yes);
+
+                        int count = FlightXmlManager.ImportFlightsToDatabase(ofd.FileName, clearExisting);
+
+                        // Загружаем обновленные рейсы напрямую из базы данных
+                        OpenTableView(reloadFromDb: true);
+
+                        MessageBox.Show(
+                            $"Успешно импортировано {count} рейсов в базу данных MySQL из файла:\n{ofd.FileName}",
+                            "Импорт завершен",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка при импорте из XML: {ex.Message}", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
