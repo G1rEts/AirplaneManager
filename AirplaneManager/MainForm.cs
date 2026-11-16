@@ -78,30 +78,6 @@ namespace AirplaneManager
 
         private enum AppView { Splash, DbError, Success, Dashboard }
 
-        // Подготовка визуального состояния формы для снимков отчета
-        public void PrepareViewForSnapshot(bool flightsChoice)
-        {
-            ShowView(AppView.Dashboard);
-            if (flightsChoice)
-            {
-                OnSidebarButtonClick(btnFlights, EntityType.Flight);
-            }
-            else
-            {
-                OnSidebarButtonClick(btnAirplanes, EntityType.Airplane);
-                OpenTableView(false);
-                gridMain.Columns.Clear();
-                gridMain.Columns.Add("Id", "ID");
-                gridMain.Columns.Add("Model", "Модель самолета");
-                gridMain.Columns.Add("Capacity", "Пассажировместимость");
-                gridMain.Rows.Add("1", "Boeing 737-800", "189");
-                gridMain.Rows.Add("2", "Airbus A320", "180");
-                gridMain.Rows.Add("3", "Boeing 777-300ER", "427");
-                gridMain.Rows.Add("4", "Superjet 100", "103");
-                gridMain.Rows.Add("5", "Airbus A350-900", "316");
-            }
-        }
-
         // Обработка клика по кнопке бокового меню и выбор сущности
         private void OnSidebarButtonClick(Button clickedButton, EntityType entity)
         {
