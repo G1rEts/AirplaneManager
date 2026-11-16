@@ -9,6 +9,7 @@ namespace AirplaneManager.Managers.Crud
     {
         #region Методы работы с БД
 
+        // Добавление нового самолета в базу данных
         public static void Add(Airplane airplane)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -25,6 +26,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение полного списка всех самолетов
         public static List<Airplane> GetAll()
         {
             var airplanes = new List<Airplane>();
@@ -53,6 +55,7 @@ namespace AirplaneManager.Managers.Crud
             return airplanes;
         }
 
+        // Поиск самолета по первичному ключу ID
         public static Airplane? GetById(int id)
         {
             Airplane? airplane = null;
@@ -82,6 +85,7 @@ namespace AirplaneManager.Managers.Crud
             return airplane;
         }
 
+        // Обновление данных самолета
         public static void Update(Airplane airplane)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -99,6 +103,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Удаление самолета по ID
         public static void Delete(int airplaneId)
         {
             using (var connection = DatabaseHelper.GetConnection())

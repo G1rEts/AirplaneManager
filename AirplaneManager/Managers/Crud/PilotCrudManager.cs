@@ -9,6 +9,7 @@ namespace AirplaneManager.Managers.Crud
     {
         #region Методы работы с БД
 
+        // Добавление нового пилота в базу данных
         public static void Add(Pilot pilot)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -32,6 +33,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение полного списка всех пилотов
         public static List<Pilot> GetAll()
         {
             var pilots = new List<Pilot>();
@@ -65,6 +67,7 @@ namespace AirplaneManager.Managers.Crud
             return pilots;
         }
 
+        // Поиск пилота по первичному ключу ID
         public static Pilot? GetById(int id)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -97,6 +100,7 @@ namespace AirplaneManager.Managers.Crud
             return null;
         }
 
+        // Обновление летных и персональных данных пилота
         public static void Update(Pilot pilot)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -124,6 +128,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Удаление пилота по ID
         public static void Delete(int pilotId)
         {
             using (var connection = DatabaseHelper.GetConnection())

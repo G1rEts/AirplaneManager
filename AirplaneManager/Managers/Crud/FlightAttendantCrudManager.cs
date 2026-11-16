@@ -9,6 +9,7 @@ namespace AirplaneManager.Managers.Crud
     {
         #region Методы работы с БД 
 
+        // Добавление бортпроводника и сохранение списка языков в базу данных
         public static void Add(FlightAttendant attendant)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -51,6 +52,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение полного списка всех бортпроводников с языками через LEFT JOIN
         public static List<FlightAttendant> GetAll()
         {
             var attendants = new Dictionary<int, FlightAttendant>();
@@ -96,6 +98,7 @@ namespace AirplaneManager.Managers.Crud
             return new List<FlightAttendant>(attendants.Values);
         }
 
+        // Получение бортпроводника по первичному ключу ID вместе с его языками
         public static FlightAttendant? GetById(int id)
         {
             FlightAttendant? attendant = null;
@@ -103,6 +106,7 @@ namespace AirplaneManager.Managers.Crud
             using (var connection = DatabaseHelper.GetConnection())
             {
                 connection.Open();
+                // Запрос бортпроводника и его языков с объединением таблиц
                 string sql = @"SELECT f.id, f.first_name, f.last_name, f.age, f.passport, f.service, l.language 
                                FROM flight_attendants f 
                                LEFT JOIN flight_attendant_languages l ON f.id = l.flight_attendant_id 
@@ -116,6 +120,7 @@ namespace AirplaneManager.Managers.Crud
                     {
                         while (reader.Read())
                         {
+                            // Инициализация объекта при первом чтении строки
                             if (attendant == null)
                             {
                                 string firstName = reader.GetString("first_name");
@@ -127,6 +132,7 @@ namespace AirplaneManager.Managers.Crud
                                 attendant = new FlightAttendant(id, firstName, lastName, age, passport, service, new List<string>());
                             }
 
+                            // Добавление языка в список если значение не NULL
                             if (!reader.IsDBNull(reader.GetOrdinal("language")))
                             {
                                 string lang = reader.GetString("language");
@@ -140,13 +146,14 @@ namespace AirplaneManager.Managers.Crud
             return attendant;
         }
 
+        // Обновление персональных данных и перезапись списка языков бортпроводника
         public static void Update(FlightAttendant attendant)
         {
             using (var connection = DatabaseHelper.GetConnection())
             {
                 connection.Open();
 
-                // Обновляем основные данные
+                // Обновление основных полей бортпроводника
                 string sql = @"UPDATE flight_attendants 
                                SET first_name = @firstName, last_name = @lastName, 
                                    age = @age, passport = @passport, service = @service 
@@ -164,7 +171,7 @@ namespace AirplaneManager.Managers.Crud
                     cmd.ExecuteNonQuery();
                 }
 
-                // Для языков проще всего: удалить старые и записать новые актуальные
+                // Очистка старых записей языков бортпроводника
                 string sqlDeleteLangs = "DELETE FROM flight_attendant_languages WHERE flight_attendant_id = @id;";
                 using (var cmdDel = new MySqlCommand(sqlDeleteLangs, connection))
                 {
@@ -172,6 +179,7 @@ namespace AirplaneManager.Managers.Crud
                     cmdDel.ExecuteNonQuery();
                 }
 
+                // Вставка актуального набора языков
                 if (attendant.Languages != null && attendant.Languages.Count > 0)
                 {
                     string sqlInsertLang = @"INSERT INTO flight_attendant_languages (flight_attendant_id, language) 
@@ -190,13 +198,14 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Удаление бортпроводника и всех связанных с ним языков
         public static void Delete(int attendantId)
         {
             using (var connection = DatabaseHelper.GetConnection())
             {
                 connection.Open();
 
-                // Сначала удаляем связанные языки
+                // Удаление связей с языками для поддержания целостности внешних ключей
                 string sqlDelLangs = "DELETE FROM flight_attendant_languages WHERE flight_attendant_id = @id;";
                 using (var cmdLangs = new MySqlCommand(sqlDelLangs, connection))
                 {
@@ -204,7 +213,7 @@ namespace AirplaneManager.Managers.Crud
                     cmdLangs.ExecuteNonQuery();
                 }
 
-                // Затем саму стюардессу
+                // Удаление записи самого бортпроводника
                 string sql = "DELETE FROM flight_attendants WHERE id = @id;";
                 using (var cmd = new MySqlCommand(sql, connection))
                 {
@@ -214,7 +223,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
-        // Вспомогательный метод для загрузки языков
+        // Загрузка списка языков бортпроводника из базы данных
         private static List<string> GetLanguagesForAttendant(int attendantId, MySqlConnection connection)
         {
             var languages = new List<string>();

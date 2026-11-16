@@ -7,9 +7,7 @@ using System.Windows.Forms;
 
 namespace AirplaneManager.UI
 {
-    /// <summary>
-    /// Элемент для отображения и выбора в многопользовательском модальном окне
-    /// </summary>
+    // Элемент списка для модального окна множественного выбора
     public class SelectableItem
     {
         public int Id { get; set; }
@@ -17,10 +15,7 @@ namespace AirplaneManager.UI
         public string Details { get; set; } = string.Empty;
     }
 
-    /// <summary>
-    /// Модальное окно выбора сущностей (пилоты, стюардессы, пассажиры)
-    /// с поддержкой быстрого поиска и множественного выбора через чекбоксы.
-    /// </summary>
+    // Модальное окно выбора с чекбоксами и быстрым поиском
     public class MultiSelectDialog : Form
     {
         [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
@@ -39,6 +34,7 @@ namespace AirplaneManager.UI
 
         public IReadOnlyCollection<int> SelectedIds => _selectedIds;
 
+        // Конструктор диалога: принимает заголовок, полный список и изначально выбранные ID
         public MultiSelectDialog(string title, List<SelectableItem> allItems, IEnumerable<int> initiallySelectedIds)
         {
             _allItems = allItems ?? new List<SelectableItem>();
@@ -48,6 +44,7 @@ namespace AirplaneManager.UI
             ApplyFilter();
         }
 
+        // Инициализация компонентов формы, таблицы с чекбоксами и панели управления
         private void InitializeComponent(string title)
         {
             this.Text = title;
@@ -275,6 +272,7 @@ namespace AirplaneManager.UI
             this.Controls.Add(pnlHeader);
         }
 
+        // Фильтрация элементов по поисковой строке
         private void ApplyFilter()
         {
             string query = _txtSearch.Text.Trim().ToLowerInvariant();
@@ -300,6 +298,7 @@ namespace AirplaneManager.UI
             UpdateCounterLabel();
         }
 
+        // Установка или снятие выбора со всех отфильтрованных строк
         private void SetAllFiltered(bool check)
         {
             foreach (DataGridViewRow row in _grid.Rows)
@@ -310,6 +309,7 @@ namespace AirplaneManager.UI
             UpdateCounterLabel();
         }
 
+        // Обновление счетчика выбранных элементов
         private void UpdateCounterLabel()
         {
             _lblCount.Text = $"Выбрано: {_selectedIds.Count} из {_allItems.Count}";

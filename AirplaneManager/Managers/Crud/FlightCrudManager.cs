@@ -5,8 +5,10 @@ using System.Collections.Generic;
 
 namespace AirplaneManager.Managers.Crud
 {
+    // Менеджер базы данных для рейсов и связующих таблиц
     public static class FlightCrudManager
     {
+        // Добавление нового рейса и связывание экипажа и пассажиров
         public static void Add(Flight flight, List<int> pilotIds, List<int> attendantIds)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -75,6 +77,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение полного списка рейсов со всеми связанными данными через JOIN
         public static List<Flight> GetAll()
         {
             var flightsDict = new Dictionary<int, Flight>();
@@ -190,12 +193,14 @@ namespace AirplaneManager.Managers.Crud
             return new List<Flight>(flightsDict.Values);
         }
 
+        // Поиск рейса по первичному ключу ID
         public static Flight? GetById(int id)
         {
             var allFlights = GetAll();
             return allFlights.Find(f => f.Id == id);
         }
 
+        // Обновление рейса и перезапись промежуточных таблиц связей
         public static void Update(Flight flight, List<int> pilotIds, List<int> attendantIds)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -268,6 +273,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Каскадное удаление связей и самого рейса по ID
         public static void Delete(int flightId)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -280,6 +286,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Консольный диалог добавления рейса
         public static void PromptAndAdd()
         {
             Console.WriteLine("--- ДОБАВЛЕНИЕ РЕЙСА ---");

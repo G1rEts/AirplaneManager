@@ -33,6 +33,10 @@ namespace AirplaneManager
         private Button btnExportXml = null!;
         private Button btnImportXml = null!;
 
+        // Кнопки формирования отчетов (Лабораторная работа № 7)
+        private Button btnExportTablePdf = null!;
+        private Button btnExportTableHtml = null!;
+
         // Боковые кнопки
         private Button btnRoutes = null!;
         private Button btnFlights = null!;
@@ -54,6 +58,7 @@ namespace AirplaneManager
             }
         }
 
+        // Построение и верстка всех графических элементов формы
         private void BuildUiElements()
         {
             this.SuspendLayout();
@@ -311,25 +316,27 @@ namespace AirplaneManager
                 BackColor = Color.Transparent
             };
 
-            var btnChoiceAdd = UiStyleHelper.CreateStyledButton("Добавить новую запись", new Size(360, 65));
-            btnChoiceAdd.Margin = new Padding(0, 0, 0, 16);
+            var btnChoiceAdd = UiStyleHelper.CreateStyledButton("Добавить новую запись", new Size(420, 48));
+            btnChoiceAdd.Margin = new Padding(0, 0, 0, 8);
             btnChoiceAdd.Click += btnAdd_Click;
 
-            var btnChoiceView = UiStyleHelper.CreateStyledButton("Просмотреть таблицу", new Size(360, 65));
-            btnChoiceView.Margin = new Padding(0, 0, 0, 16);
+            var btnChoiceView = UiStyleHelper.CreateStyledButton("Просмотреть таблицу", new Size(420, 48));
+            btnChoiceView.Margin = new Padding(0, 0, 0, 8);
             btnChoiceView.Click += (s, e) => OpenTableView(true);
 
-            btnExportXml = UiStyleHelper.CreateStyledButton("Экспорт рейсов в XML", new Size(360, 55));
-            btnExportXml.Margin = new Padding(0, 0, 0, 16);
+            btnExportXml = UiStyleHelper.CreateStyledButton("Экспорт рейсов в XML", new Size(420, 44));
+            btnExportXml.Margin = new Padding(0, 0, 0, 8);
             btnExportXml.Click += btnExportXml_Click;
             btnExportXml.Visible = false;
 
-            btnImportXml = UiStyleHelper.CreateStyledButton("Импорт рейсов из XML", new Size(360, 55));
-            btnImportXml.Margin = new Padding(0, 0, 0, 16);
+            btnImportXml = UiStyleHelper.CreateStyledButton("Импорт рейсов из XML", new Size(420, 44));
+            btnImportXml.Margin = new Padding(0, 0, 0, 8);
             btnImportXml.Click += btnImportXml_Click;
             btnImportXml.Visible = false;
 
-            choiceButtonsFlow.Controls.AddRange(new Control[] { btnChoiceAdd, btnChoiceView, btnExportXml, btnImportXml });
+            choiceButtonsFlow.Controls.AddRange(new Control[] {
+                btnChoiceAdd, btnChoiceView, btnExportXml, btnImportXml
+            });
             choiceCenterGrid.Controls.Add(choiceButtonsFlow, 1, 1);
             pnlEntityChoice.Controls.Add(choiceCenterGrid);
 
@@ -353,8 +360,8 @@ namespace AirplaneManager
             {
                 Text = "Обновить выбранное",
                 Font = new Font("Arial", 11, FontStyle.Bold),
-                Size = new Size(210, 42),
-                Location = new Point(20, 11),
+                Size = new Size(190, 42),
+                Location = new Point(15, 11),
                 BackColor = Color.FromArgb(80, 140, 210),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
@@ -365,15 +372,39 @@ namespace AirplaneManager
             {
                 Text = "Удалить выбранное",
                 Font = new Font("Arial", 11, FontStyle.Bold),
-                Size = new Size(210, 42),
-                Location = new Point(250, 11),
+                Size = new Size(190, 42),
+                Location = new Point(220, 11),
                 BackColor = Color.FromArgb(220, 80, 80),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
             };
             btnDeleteRow.Click += btnDelete_Click;
 
-            pnlBottomActions.Controls.AddRange(new Control[] { btnUpdateRow, btnDeleteRow });
+            btnExportTablePdf = new Button
+            {
+                Text = "Экспорт таблицы в PDF",
+                Font = new Font("Arial", 11, FontStyle.Bold),
+                Size = new Size(210, 42),
+                Location = new Point(425, 11),
+                BackColor = Color.FromArgb(43, 108, 176),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnExportTablePdf.Click += btnExportTablePdf_Click;
+
+            btnExportTableHtml = new Button
+            {
+                Text = "Экспорт таблицы в HTML",
+                Font = new Font("Arial", 11, FontStyle.Bold),
+                Size = new Size(210, 42),
+                Location = new Point(650, 11),
+                BackColor = Color.FromArgb(49, 151, 149),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnExportTableHtml.Click += btnExportTableHtml_Click;
+
+            pnlBottomActions.Controls.AddRange(new Control[] { btnUpdateRow, btnDeleteRow, btnExportTablePdf, btnExportTableHtml });
 
             gridMain = new DataGridView
             {

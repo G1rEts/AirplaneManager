@@ -5,6 +5,7 @@ using AirplaneManager.Models;
 
 namespace AirplaneManager.Managers
 {
+    // Хранилище списков сущностей в оперативной памяти
     internal class AirplaneManagerClass
     {
         public List<Airport> Airports { get; set; } = new List<Airport>();
@@ -15,6 +16,7 @@ namespace AirplaneManager.Managers
         public List <Passenger> Passengers { get; set; } = new List<Passenger>();
         public List<Flight> Flights { get; set; } = new List<Flight>();
 
+        // Конструктор: инициализация пустых списков
         public AirplaneManagerClass() 
         {
             Airports = new List<Airport>();
@@ -26,6 +28,7 @@ namespace AirplaneManager.Managers
             Flights = new List<Flight>();
         }
 
+        // Добавление аэропорта в список
         public void AddAirport(Airport airport)
         {
             if (airport != null)
@@ -34,6 +37,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление самолета в список
         public void AddAirplane(Airplane airplane)
         {
             if (airplane != null)
@@ -42,6 +46,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление маршрута в список
         public void AddRoute(Route route)
         {
             if (route != null)
@@ -50,6 +55,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление пилота в список
         public void AddPilot(Pilot pilot)
         {
             if (pilot != null)
@@ -58,6 +64,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление бортпроводника в список
         public void AddFlightAttendant(FlightAttendant flightAttendant)
         {
             if (flightAttendant != null)
@@ -66,6 +73,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление пассажира в список
         public void AddPassenger(Passenger passenger)
         {
             if (passenger != null)
@@ -74,6 +82,7 @@ namespace AirplaneManager.Managers
             }
         }
 
+        // Добавление рейса в список
         public void AddFlight(Flight flight)
         {
             if (flight != null)

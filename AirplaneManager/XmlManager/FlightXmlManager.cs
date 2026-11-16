@@ -11,16 +11,12 @@ using MySql.Data.MySqlClient;
 
 namespace AirplaneManager.XmlManager
 {
-    /// <summary>
-    /// Менеджер экспорта и импорта рейсов в формате XML.
-    /// </summary>
+    // Менеджер экспорта и импорта рейсов в формате XML через LINQ to XML
     public static class FlightXmlManager
     {
         private const string DateFormat = "yyyy-MM-dd HH:mm";
 
-        /// <summary>
-        /// Экспорт списка рейсов в XML-файл.
-        /// </summary>
+        // Экспорт списка рейсов в файл формата XML
         public static void ExportFlights(string filePath, List<Flight> flights)
         {
             var root = new XElement("flights");
@@ -131,9 +127,7 @@ namespace AirplaneManager.XmlManager
             doc.Save(filePath);
         }
 
-        /// <summary>
-        /// Импорт списка рейсов из XML-файла в память.
-        /// </summary>
+        // Импорт списка рейсов из XML-файла в оперативную память
         public static List<Flight> ImportFlights(string filePath)
         {
             if (!File.Exists(filePath))
@@ -245,9 +239,7 @@ namespace AirplaneManager.XmlManager
             return result;
         }
 
-        /// <summary>
-        /// Импорт списка рейсов из XML-файла напрямую в базу данных MySQL.
-        /// </summary>
+        // Импорт рейсов из XML напрямую в базу данных MySQL со связыванием справочников
         public static int ImportFlightsToDatabase(string filePath, bool clearExisting = false)
         {
             var flights = ImportFlights(filePath);
@@ -337,17 +329,19 @@ namespace AirplaneManager.XmlManager
             return insertedCount;
         }
 
+        // Парсинг XML-узла аэропорта с защитой от отсутствующих атрибутов
         private static Airport ParseAirport(XElement? node)
         {
             if (node == null) return new Airport(0, "Неизвестный", "UNK", "Город", "Страна");
 
-            return new Airport(
-                (int?)node.Attribute("id") ?? 0,
-                (string?)node.Attribute("name") ?? "",
-                (string?)node.Attribute("code") ?? "UNK",
-                (string?)node.Attribute("city") ?? "",
-                (string?)node.Attribute("country") ?? ""
-            );
+            // Извлечение атрибутов узла аэропорта
+            int id = (int?)node.Attribute("id") ?? 0;
+            string name = (string?)node.Attribute("name") ?? "";
+            string code = (string?)node.Attribute("code") ?? "UNK";
+            string city = (string?)node.Attribute("city") ?? "";
+            string country = (string?)node.Attribute("country") ?? "";
+
+            return new Airport(id, name, code, city, country);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace AirplaneManager.Managers.Crud
     {
         #region Методы работы с БД
 
+        // Добавление нового маршрута в базу данных
         public static void Add(Route route)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -29,6 +30,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение всех маршрутов с объединением данных аэропортов через JOIN
         public static List<Route> GetAll()
         {
             var routes = new List<Route>();
@@ -78,6 +80,7 @@ namespace AirplaneManager.Managers.Crud
             return routes;
         }
 
+        // Поиск маршрута по первичному ключу ID
         public static Route? GetById(int id)
         {
             Route? route = null;
@@ -129,6 +132,7 @@ namespace AirplaneManager.Managers.Crud
             return route;
         }
 
+        // Обновление данных существующего маршрута
         public static void Update(Route route)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -152,6 +156,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Удаление маршрута по ID
         public static void Delete(int routeId)
         {
             using (var connection = DatabaseHelper.GetConnection())

@@ -2,10 +2,7 @@ using System;
 
 namespace AirplaneManager.Exceptions
 {
-    /// <summary>
-    /// Исключение, возникающее при попытке создать маршрут,
-    /// где пункт вылета совпадает с пунктом назначения.
-    /// </summary>
+    // Исключение при попытке создать маршрут, где пункт вылета совпадает с пунктом прилета
     public class InvalidRouteException : Exception
     {
         public string? DepartureAirport { get; }

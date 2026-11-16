@@ -2,10 +2,7 @@
 
 namespace AirplaneManager.Exceptions
 {
-    /// <summary>
-    /// Исключение, возникающее при попытке посадить на рейс больше пассажиров,
-    /// чем вмещает назначенный самолет.
-    /// </summary>
+    // Исключение при попытке посадить на рейс больше пассажиров, чем вмещает самолет
     public class FlightCapacityExceededException : Exception
     {
         public int Capacity { get; }

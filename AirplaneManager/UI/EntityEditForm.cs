@@ -11,6 +11,7 @@ using AirplaneManager.Models;
 
 namespace AirplaneManager.UI
 {
+    // Универсальная форма создания и редактирования сущностей системы
     public class EntityEditForm : Form
     {
         private readonly EntityType _entityType;
@@ -45,6 +46,7 @@ namespace AirplaneManager.UI
         private Button _btnSelectAttendants = null!;
         private Button _btnSelectPassengers = null!;
 
+        // Конструктор формы: принимает тип сущности и ID записи (null при создании новой)
         public EntityEditForm(EntityType entityType, int? editId = null)
         {
             _entityType = entityType;
@@ -58,6 +60,7 @@ namespace AirplaneManager.UI
             ValidateFormInputs();
         }
 
+        // Построение элементов интерфейса и полей ввода
         private void BuildFormUi()
         {
             string mode = _editId.HasValue ? $"Редактирование (ID: {_editId})" : "Добавление новой записи";
@@ -203,6 +206,7 @@ namespace AirplaneManager.UI
             this.Controls.Add(pnlButtons);
         }
 
+        // Создание кнопки выбора членов экипажа или пассажиров
         private Button CreatePersonnelButton(string text, EventHandler onClick)
         {
             var btn = new Button
@@ -221,6 +225,7 @@ namespace AirplaneManager.UI
             return btn;
         }
 
+        // Открытие диалогового окна выбора пилотов
         private void OnSelectPilotsClick(object? sender, EventArgs e)
         {
             var items = PilotCrudManager.GetAll().OrderBy(p => p.Rang).ThenBy(p => p.LastName).Select(p => new SelectableItem
@@ -241,6 +246,7 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Открытие диалогового окна выбора бортпроводников
         private void OnSelectAttendantsClick(object? sender, EventArgs e)
         {
             var items = FlightAttendantCrudManager.GetAll().OrderBy(a => a.Service).ThenBy(a => a.LastName).Select(a => new SelectableItem
@@ -261,6 +267,7 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Открытие диалогового окна выбора пассажиров
         private void OnSelectPassengersClick(object? sender, EventArgs e)
         {
             var items = PassengerCrudManager.GetAll().OrderBy(p => p.LastName).ThenBy(p => p.FirstName).Select(pass => new SelectableItem
@@ -281,6 +288,7 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Обновление счетчиков на кнопках выбора персонала
         private void UpdatePersonnelButtons()
         {
             if (_btnSelectPilots != null)
@@ -291,6 +299,7 @@ namespace AirplaneManager.UI
                 _btnSelectPassengers.Text = $"Пассажиры (выбрано: {_selectedPassengerIds.Count})";
         }
 
+        // Добавление строки с текстовой подписью и элементом управления
         private void AddRow(string labelText, Control control)
         {
             int row = _fieldsGrid.RowCount++;
@@ -308,7 +317,7 @@ namespace AirplaneManager.UI
             _fieldsGrid.Controls.Add(control, 1, row);
         }
 
-        // РЕАКТИВНОСТЬ ИНТЕРФЕЙСА (TextChanged, SelectedIndexChanged, CheckedChanged)
+        // Настройка событий для реактивной валидации при вводе
         private void SetupReactiveEvents()
         {
             // Реактивная валидация при вводе любого текста
@@ -360,6 +369,7 @@ namespace AirplaneManager.UI
             };
         }
 
+        // Проверка корректности введенных значений и блокировка кнопки сохранения при ошибке
         private void ValidateFormInputs()
         {
             string error = "";
@@ -423,6 +433,7 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Загрузка данных существующей записи из базы данных при редактировании
         private void LoadExistingData(int id)
         {
             switch (_entityType)
@@ -474,6 +485,7 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Поиск и выбор элемента выпадающего списка по первичному ключу ID
         private void SelectComboById(ComboBox cmb, int id)
         {
             for (int i = 0; i < cmb.Items.Count; i++)
@@ -487,55 +499,80 @@ namespace AirplaneManager.UI
             }
         }
 
+        // Сохранение изменений в базу данных с валидацией бизнес-правил
         private void BtnSave_Click(object? sender, EventArgs e)
         {
             try
             {
+                // Идентификатор записи: извлекаем ID для редактирования либо 0 для новой записи
                 int id = _editId ?? 0;
+
                 switch (_entityType)
                 {
                     case EntityType.Airport:
+                        // Создание объекта аэропорта из текстовых полей
                         var airport = _editId.HasValue
                             ? new Airport(id, _txt1.Text.Trim(), _txt2.Text.Trim(), _txt3.Text.Trim(), _txt4.Text.Trim())
                             : new Airport(_txt1.Text.Trim(), _txt2.Text.Trim(), _txt3.Text.Trim(), _txt4.Text.Trim());
-                        if (_editId.HasValue) AirportCrudManager.Update(airport); else AirportCrudManager.Add(airport);
+
+                        // Вызов метода обновления или добавления в таблице airports
+                        if (_editId.HasValue) AirportCrudManager.Update(airport);
+                        else AirportCrudManager.Add(airport);
                         break;
 
                     case EntityType.Airplane:
+                        // Создание объекта самолета с моделью и вместимостью
                         var plane = _editId.HasValue
                             ? new Airplane(id, _txt1.Text.Trim(), (int)_num1.Value)
                             : new Airplane(_txt1.Text.Trim(), (int)_num1.Value);
-                        if (_editId.HasValue) AirplaneCrudManager.Update(plane); else AirplaneCrudManager.Add(plane);
+
+                        // Сохранение самолета в таблице airplanes
+                        if (_editId.HasValue) AirplaneCrudManager.Update(plane);
+                        else AirplaneCrudManager.Add(plane);
                         break;
 
                     case EntityType.Passenger:
+                        // Создание объекта пассажира с возрастом, паспортом и бонусными милями
                         var pass = _editId.HasValue
                             ? new Passenger(id, _txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value)
                             : new Passenger(_txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value);
-                        if (_editId.HasValue) PassengerCrudManager.Update(pass); else PassengerCrudManager.Add(pass);
+
+                        // Сохранение пассажира в таблице passengers
+                        if (_editId.HasValue) PassengerCrudManager.Update(pass);
+                        else PassengerCrudManager.Add(pass);
                         break;
 
                     case EntityType.Pilot:
+                        // Парсинг 6-значного номера летной лицензии
                         int lic = int.Parse(_txt4.Text.Trim());
                         var pilot = _editId.HasValue
                             ? new Pilot(id, _txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value, lic, (int)_num3.Value)
                             : new Pilot(_txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value, lic, (int)_num3.Value);
-                        if (_editId.HasValue) PilotCrudManager.Update(pilot); else PilotCrudManager.Add(pilot);
+
+                        // Сохранение пилота в таблице pilots
+                        if (_editId.HasValue) PilotCrudManager.Update(pilot);
+                        else PilotCrudManager.Add(pilot);
                         break;
 
                     case EntityType.FlightAttendant:
+                        // Разделение строки языков по запятым в список
                         var langs = _txt4.Text.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToList();
                         var att = _editId.HasValue
                             ? new FlightAttendant(id, _txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value, langs)
                             : new FlightAttendant(_txt1.Text.Trim(), _txt2.Text.Trim(), (int)_num1.Value, _txt3.Text.Trim(), (int)_num2.Value, langs);
-                        if (_editId.HasValue) FlightAttendantCrudManager.Update(att); else FlightAttendantCrudManager.Add(att);
+
+                        // Сохранение бортпроводника в таблице flight_attendants
+                        if (_editId.HasValue) FlightAttendantCrudManager.Update(att);
+                        else FlightAttendantCrudManager.Add(att);
                         break;
 
                     case EntityType.Route:
+                        // Парсинг длительности перелета в часах с поддержкой точки и запятой
                         double dur = double.Parse(_txt2.Text.Replace(',', '.'), CultureInfo.InvariantCulture);
                         var dep = (Airport)_cmb1.SelectedItem!;
                         var arr = (Airport)_cmb2.SelectedItem!;
 
+                        // Проверка совпадения аэропортов вылета и прилета
                         if (dep.Id == arr.Id)
                         {
                             throw new InvalidRouteException(dep.Name, arr.Name);
@@ -544,18 +581,25 @@ namespace AirplaneManager.UI
                         var route = _editId.HasValue
                             ? new Route(id, _txt1.Text.Trim(), dur, dep, arr)
                             : new Route(_txt1.Text.Trim(), dur, dep, arr);
-                        if (_editId.HasValue) RouteCrudManager.Update(route); else RouteCrudManager.Add(route);
+
+                        // Сохранение маршрута в таблице routes
+                        if (_editId.HasValue) RouteCrudManager.Update(route);
+                        else RouteCrudManager.Add(route);
                         break;
 
                     case EntityType.Flight:
+                        // Получение выбранного маршрута и назначенного самолета
                         var rt = (Route)_cmb1.SelectedItem!;
                         var pln = _chkAssignPlane.Checked ? (Airplane?)_cmb2.SelectedItem : null;
+
+                        // Загрузка полных объектов выбранных пассажиров из базы данных по их ID
                         var passList = _selectedPassengerIds
                             .Select(x => PassengerCrudManager.GetById(x))
                             .Where(x => x != null)
                             .Cast<Passenger>()
                             .ToList();
 
+                        // Проверка ограничения вместимости самолета
                         if (pln != null && passList.Count > pln.Capacity)
                         {
                             throw new FlightCapacityExceededException(pln.Capacity, passList.Count);
@@ -565,11 +609,13 @@ namespace AirplaneManager.UI
                             ? new Flight(id, _dtpFlight.Value, rt, pln, passList)
                             : new Flight(_dtpFlight.Value, rt, pln, passList);
 
+                        // Сохранение рейса и связывание внешних ключей экипажа в связующих таблицах
                         if (_editId.HasValue) FlightCrudManager.Update(flight, _selectedPilotIds, _selectedAttendantIds);
                         else FlightCrudManager.Add(flight, _selectedPilotIds, _selectedAttendantIds);
                         break;
                 }
 
+                // Успешное закрытие модального окна с кодом OK
                 this.DialogResult = DialogResult.OK;
             }
             catch (FlightCapacityExceededException ex)

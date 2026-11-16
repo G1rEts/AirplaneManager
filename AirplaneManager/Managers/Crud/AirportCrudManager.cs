@@ -9,6 +9,7 @@ namespace AirplaneManager.Managers.Crud
     {
         #region Методы работы с БД
 
+        // Добавление нового аэропорта в базу данных
         public static void Add(Airport airport)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -28,6 +29,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Получение полного списка всех аэропортов
         public static List<Airport> GetAll()
         {
             var airports = new List<Airport>();
@@ -58,6 +60,7 @@ namespace AirplaneManager.Managers.Crud
             return airports;
         }
 
+        // Поиск аэропорта по первичному ключу ID
         public static Airport? GetById(int id)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -87,6 +90,7 @@ namespace AirplaneManager.Managers.Crud
             return null;
         }
 
+        // Обновление данных существующего аэропорта
         public static void Update(Airport airport)
         {
             using (var connection = DatabaseHelper.GetConnection())
@@ -107,6 +111,7 @@ namespace AirplaneManager.Managers.Crud
             }
         }
 
+        // Удаление аэропорта по ID
         public static void Delete(int airportId)
         {
             using (var connection = DatabaseHelper.GetConnection())

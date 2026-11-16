@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="26.7.0" />
+    <PackageReference Include="QuestPDF" Version="2026.9.2" />
   </ItemGroup>
 
   <ItemGroup>
